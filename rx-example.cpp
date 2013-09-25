@@ -32,8 +32,8 @@ const uint16_t other_node = 1;
 struct payload_t
 {
   unsigned long  nodeId;
-  float temperature;
-  float humidity;
+  float data1;
+  float data2;
 };
 
 int main(int argc, char** argv) 
@@ -41,7 +41,8 @@ int main(int argc, char** argv)
 	// Refer to RF24.h or nRF24L01 DS for settings
 	char    *rrd_argv[2];
     	int       rrd_argc;
-    	char filename[] = "/root/weather/weather_sensor.rrd";
+    	char filenameTemp[] = "/root/weather/weather_sensor.rrd";
+    	char filenameCurrent[] = "/root/weather/current_sensor.rrd";
     	char command[] = "update";
 	char values[100];
 
@@ -62,21 +63,36 @@ int main(int argc, char** argv)
 		    payload_t payload;
 		    network.read(header,&payload,sizeof(payload));
 
+		    // sensor de temperatura y humedad
+		    if (payload.nodeId == 1) {
+			    rrd_argv[0]= command; 
+			    rrd_argv[1]= filenameTemp; 
+			    rrd_argv[3]= NULL;
+			    rrd_argc=3;
+			    printf("N:%.2f:%.2f\n", payload.data2, payload.data2);    
+			    sprintf(values, "N:%.2f:%.2f", payload.data1, payload.data2);    
+			    rrd_argv[2]= values;
+			    rrd_update(rrd_argc, rrd_argv);
+		    }
+
+		    if (payload.nodeId == 2) {
+			    rrd_argv[0]= command; 
+			    rrd_argv[1]= filenameCurrent; 
+			    rrd_argv[3]= NULL;
+			    rrd_argc=3;
+			    printf("N:%.2f:%.2f\n", payload.data1, payload.data2);    
+			    sprintf(values, "N:%.2f:%.2f", payload.data1, payload.data2);    
+			    rrd_argv[2]= values;
+			    rrd_update(rrd_argc, rrd_argv);
+			    
+		    }
 		    //time_t timer;
     		    //char timeBuffer[25];
     		    //struct tm* tm_info;
     		    //time(&timer);
     		    //tm_info = localtime(&timer);
 		    //strftime(timeBuffer, 25, "%Y/%m/%d %H:%M:%S", tm_info);
-		    //fprintf(pFile, "%s;%lu;%.2f;%.2f\n", timeBuffer,payload.nodeId, payload.temperature, payload.humidity);    
-		    rrd_argv[0]= command; 
-		    rrd_argv[1]= filename; 
-		    rrd_argv[3]= NULL;
-		    rrd_argc=3;
-		    printf("N:%.2f:%.2f\n", payload.temperature, payload.humidity);    
-		    sprintf(values, "N:%.2f:%.2f", payload.temperature, payload.humidity);    
-		    rrd_argv[2]= values;
-		    rrd_update(rrd_argc, rrd_argv);
+		    //fprintf(pFile, "%s;%lu;%.2f;%.2f\n", timeBuffer,payload.nodeId, payload.data1, payload.data2);    
 		  }
 		 delay(2000);
 		 //fclose(pFile);
