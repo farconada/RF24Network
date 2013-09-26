@@ -29,13 +29,20 @@ const uint16_t this_node = 0;
 const uint16_t other_node = 1;
 
 // Structure of our payload
-struct payload_t
+struct payload_power_t
 {
   unsigned long  nodeId;
-  float data1;
-  float data2;
+  float power;
+  float current;
 };
 
+struct payload_weather_t
+{
+  unsigned long  nodeId;
+  float temperature;
+  float humidity;
+  unsigned long  lux;
+};
 int main(int argc, char** argv) 
 {
 	// Refer to RF24.h or nRF24L01 DS for settings
@@ -60,28 +67,31 @@ int main(int argc, char** argv)
 		  {
 		    // If so, grab it and print it out
 		    RF24NetworkHeader header;
-		    payload_t payload;
-		    network.read(header,&payload,sizeof(payload));
+		    network.peek(header);
 
 		    // sensor de temperatura y humedad
-		    if (payload.nodeId == 1) {
+		    if (header.from_node == 1) {
+		    	    payload_weather_t payload;
+		    	    network.read(header,&payload,sizeof(payload));
 			    rrd_argv[0]= command; 
 			    rrd_argv[1]= filenameTemp; 
 			    rrd_argv[3]= NULL;
 			    rrd_argc=3;
-			    printf("N:%.2f:%.2f\n", payload.data2, payload.data2);    
-			    sprintf(values, "N:%.2f:%.2f", payload.data1, payload.data2);    
+			    printf("N:%.2f:%.2f:%lu\n", payload.temperature, payload.humidity, payload.lux);    
+			    sprintf(values, "N:%.2f:%.2f:%lu", payload.temperature, payload.humidity, payload.lux);    
 			    rrd_argv[2]= values;
 			    rrd_update(rrd_argc, rrd_argv);
 		    }
 
-		    if (payload.nodeId == 2) {
+		    if (header.from_node == 2) {
+		    	    payload_power_t payload;
+		    	    network.read(header,&payload,sizeof(payload));
 			    rrd_argv[0]= command; 
 			    rrd_argv[1]= filenameCurrent; 
 			    rrd_argv[3]= NULL;
 			    rrd_argc=3;
-			    printf("N:%.2f:%.2f\n", payload.data1, payload.data2);    
-			    sprintf(values, "N:%.2f:%.2f", payload.data1, payload.data2);    
+			    printf("N:%.2f:%.2f\n", payload.power, payload.current);    
+			    sprintf(values, "N:%.2f:%.2f", payload.power, payload.current);    
 			    rrd_argv[2]= values;
 			    rrd_update(rrd_argc, rrd_argv);
 			    
